@@ -205,8 +205,8 @@ export function DashboardPage() {
                       try {
                         const res = await fetch("http://localhost:8000/api/adb/devices/scan");
                         const data = await res.json();
-                        if (Array.isArray(data.devices)) {
-                          setAdbDevices(data.devices);
+                        if (Array.isArray(data)) {
+                          setAdbDevices(data);
                         } else {
                           alert("Lỗi quét thiết bị: " + JSON.stringify(data));
                           setAdbDevices([]);
