@@ -2,9 +2,6 @@ import { useState, useEffect } from "react";
 import { Play, Pause, StopCircle, Users, ExternalLink, Clock, AlertTriangle } from "lucide-react";
 
 export function DashboardPage() {
-  const [sessionState, setSessionState] = useState("preparing");
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [showReminder, setShowReminder] = useState(true);
   const [adbDevices, setAdbDevices] = useState<string[]>([]);
   const [copyStatus, setCopyStatus] = useState(false);
 
@@ -14,15 +11,6 @@ export function DashboardPage() {
   const [isAutoRunning, setIsAutoRunning] = useState(false);
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
   const [countdown, setCountdown] = useState(0);
-  useEffect(() => {
-    let interval: number;
-    if (sessionState === "live") {
-      interval = window.setInterval(() => {
-        setElapsedTime((prev) => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [sessionState]);
 
   // Auto Comment Loop Effect
   useEffect(() => {
@@ -31,17 +19,20 @@ export function DashboardPage() {
     if (isAutoRunning) {
       const lines = scriptsText.split('\n').map(l => l.trim()).filter(l => l);
       
-      if (lines.length === 0 || currentLineIndex >= lines.length) {
+      if (lines.length === 0) {
         setIsAutoRunning(false);
         setCountdown(0);
         return;
       }
 
+      // Ensure index is within bounds (in case text was edited while running)
+      const safeIndex = currentLineIndex % lines.length;
+
       if (countdown > 0) {
         timer = window.setTimeout(() => setCountdown(c => c - 1), 1000);
       } else {
         // Time to send!
-        const textToSend = lines[currentLineIndex];
+        const textToSend = lines[safeIndex];
         
         // Send to ADB
         if (adbDevices.length > 0) {
@@ -54,8 +45,8 @@ export function DashboardPage() {
           });
         }
         
-        // Move to next line and reset countdown
-        setCurrentLineIndex(prev => prev + 1);
+        // Move to next line (looping infinitely) and reset countdown
+        setCurrentLineIndex((safeIndex + 1) % lines.length);
         setCountdown(intervalSeconds);
       }
     }
@@ -63,60 +54,26 @@ export function DashboardPage() {
     return () => clearTimeout(timer);
   }, [isAutoRunning, countdown, currentLineIndex, intervalSeconds, scriptsText, adbDevices]);
 
-  const formatTime = (seconds: number) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-  };
-
   return (
     <div className="h-full flex flex-col">
       {/* Top Header */}
       <div className="p-6 border-b border-slate-700/50 flex items-center justify-between bg-slate-800/20">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <h2 className="text-2xl font-bold">Launch: Special Summer Sale</h2>
-            <span className={`px-2 py-1 rounded-md text-xs font-medium uppercase tracking-wider ${
-              sessionState === "live" ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-slate-700 text-slate-300"
-            }`}>
-              {sessionState}
+            <h2 className="text-2xl font-bold text-slate-100">Boxphone Auto Seeding</h2>
+            <span className="bg-brand-primary/20 text-brand-primary border border-brand-primary/30 px-2 py-1 rounded-md text-xs font-medium uppercase tracking-wider">
+              PRO VERSION
             </span>
           </div>
-          <a href="#" className="text-sm text-brand-primary hover:text-blue-400 flex items-center gap-1">
-            <ExternalLink size={14} /> tiktok.com/@demo/live
-          </a>
+          <p className="text-sm text-slate-400">Hệ thống điều khiển comment tự động qua ADB</p>
         </div>
         
-        <div className="flex items-center gap-6">
-          <div className="text-center">
-            <p className="text-xs text-slate-400 mb-1">Elapsed Time</p>
-            <div className="text-3xl font-mono tracking-wider font-semibold text-slate-200">
-              {formatTime(elapsedTime)}
-            </div>
+        <div className="flex items-center gap-4">
+          <div className="bg-slate-900/50 border border-slate-700 px-4 py-2 rounded-lg text-sm text-slate-300">
+            Trạng thái: {adbDevices.length > 0 ? <span className="text-green-400 font-medium">{adbDevices.length} máy sẵn sàng</span> : <span className="text-slate-500">Chưa quét thiết bị</span>}
           </div>
-          <div className="flex gap-2">
-            {sessionState !== "live" ? (
-              <button 
-                onClick={() => setSessionState("live")}
-                className="bg-brand-primary hover:bg-blue-500 text-white p-3 rounded-lg shadow-lg shadow-blue-500/20 transition-all"
-              >
-                <Play size={20} />
-              </button>
-            ) : (
-              <button 
-                onClick={() => setSessionState("paused")}
-                className="bg-amber-500 hover:bg-amber-400 text-white p-3 rounded-lg shadow-lg shadow-amber-500/20 transition-all"
-              >
-                <Pause size={20} />
-              </button>
-            )}
-            <button 
-              onClick={() => setSessionState("ended")}
-              className="bg-slate-700 hover:bg-slate-600 text-white p-3 rounded-lg transition-all"
-            >
-              <StopCircle size={20} />
-            </button>
+        </div>
+      </div>>
           </div>
         </div>
       </div>
