@@ -185,9 +185,15 @@ export function DashboardPage() {
                   try {
                     const res = await fetch("http://localhost:8000/api/adb/devices/scan");
                     const data = await res.json();
-                    setAdbDevices(data);
+                    if (Array.isArray(data)) {
+                      setAdbDevices(data);
+                    } else {
+                      alert("Lỗi quét thiết bị: " + JSON.stringify(data));
+                      setAdbDevices([]);
+                    }
                   } catch (e) {
                     console.error(e);
+                    alert("Không thể kết nối đến Backend!");
                   }
                 }}
                 className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded"
