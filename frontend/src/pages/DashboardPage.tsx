@@ -8,15 +8,60 @@ export function DashboardPage() {
   const [adbDevices, setAdbDevices] = useState<string[]>([]);
   const [copyStatus, setCopyStatus] = useState(false);
 
+  // Auto Comment State
+  const [scriptsText, setScriptsText] = useState("Mọi người bấm thả tim góc phải màn hình ủng hộ shop nha ❤️\nNhấn đúp màn hình thả tim cho shop với ạ!\nAnh chị thả tim cho phiên live để shop lên deal sốc nhé");
+  const [intervalSeconds, setIntervalSeconds] = useState(5);
+  const [isAutoRunning, setIsAutoRunning] = useState(false);
+  const [currentLineIndex, setCurrentLineIndex] = useState(0);
+  const [countdown, setCountdown] = useState(0);
   useEffect(() => {
     let interval: number;
     if (sessionState === "live") {
-      interval = setInterval(() => {
+      interval = window.setInterval(() => {
         setElapsedTime((prev) => prev + 1);
-      }, 1000) as unknown as number;
+      }, 1000);
     }
     return () => clearInterval(interval);
   }, [sessionState]);
+
+  // Auto Comment Loop Effect
+  useEffect(() => {
+    let timer: number;
+    
+    if (isAutoRunning) {
+      const lines = scriptsText.split('\n').map(l => l.trim()).filter(l => l);
+      
+      if (lines.length === 0 || currentLineIndex >= lines.length) {
+        setIsAutoRunning(false);
+        setCountdown(0);
+        return;
+      }
+
+      if (countdown > 0) {
+        timer = window.setTimeout(() => setCountdown(c => c - 1), 1000);
+      } else {
+        // Time to send!
+        const textToSend = lines[currentLineIndex];
+        
+        // Send to ADB
+        if (adbDevices.length > 0) {
+          adbDevices.forEach(device => {
+            fetch("http://localhost:8000/api/adb/devices/send-comment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ device_id: device, text: textToSend })
+            }).catch(e => console.error("ADB Error:", e));
+          });
+        }
+        
+        // Move to next line and reset countdown
+        setCurrentLineIndex(prev => prev + 1);
+        setCountdown(intervalSeconds);
+      }
+    }
+    
+    return () => clearTimeout(timer);
+  }, [isAutoRunning, countdown, currentLineIndex, intervalSeconds, scriptsText, adbDevices]);
 
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -81,98 +126,83 @@ export function DashboardPage() {
         
         {/* Left Column: Alerts & Script Runner */}
         <div className="col-span-8 flex flex-col gap-6">
-          
-          {/* Big Reminder Area */}
-          {showReminder && (
-            <div className="bg-gradient-to-br from-brand-primary/20 to-brand-accent/20 border border-brand-primary/30 rounded-2xl p-8 relative overflow-hidden group">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-primary to-brand-accent animate-pulse"></div>
-              
-              <div className="flex items-start justify-between mb-6">
-                <div>
-                  <div className="flex items-center gap-2 text-brand-primary mb-2">
-                    <AlertTriangle size={24} className="animate-bounce" />
-                    <h3 className="text-xl font-bold">Time to post!</h3>
-                  </div>
-                  <p className="text-slate-300">Target Group: <span className="font-semibold text-white bg-slate-800 px-2 py-1 rounded">Engagement</span></p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-slate-400 mb-1">Priority</p>
-                  <span className="bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1 rounded-full text-sm font-medium">HIGH</span>
-                </div>
-              </div>
-
-              <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-700/50 mb-8 shadow-inner">
-                <p className="text-3xl font-medium text-white leading-relaxed">
-                  "Mọi người bấm thả tim góc phải màn hình ủng hộ shop nha ❤️"
-                </p>
-              </div>
-
-              {/* Duplicate Warning Warning */}
-              <div className="mb-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-200/90 text-sm flex gap-3">
-                <AlertTriangle size={18} className="text-amber-400 shrink-0" />
-                <div>
-                  <p className="font-medium mb-1">Used recently (4 mins ago).</p>
-                  <p>Consider using one of these variants instead:</p>
-                  <ul className="mt-2 space-y-1">
-                    <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-amber-400"></div>Nhấn đúp màn hình thả tim cho shop với ạ!</li>
-                    <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-amber-400"></div>Anh chị thả tim cho phiên live để shop lên deal sốc nhé</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-4">
+          <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-6">
+            <h3 className="text-xl font-bold mb-4 text-brand-primary flex items-center gap-2">
+              <Play size={20} /> Auto Comment Configuration
+            </h3>
+            
+            <div className="mb-4">
+              <div className="flex justify-between items-end mb-2">
+                <label className="block text-sm text-slate-400">Comment Scripts (Mỗi dòng 1 comment)</label>
                 <button 
-                  onClick={async () => {
-                    if (adbDevices.length > 0) {
-                      const textToSend = "Mọi người bấm thả tim góc phải màn hình ủng hộ shop nha ❤️";
-                      for (const device of adbDevices) {
-                        try {
-                          await fetch("http://localhost:8000/api/adb/devices/send-comment", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ device_id: device, text: textToSend })
-                          });
-                        } catch (e) {
-                          console.error("Failed to send via ADB", e);
-                        }
+                  onClick={() => setCurrentLineIndex(0)}
+                  className="text-xs text-slate-500 hover:text-slate-300"
+                  disabled={isAutoRunning}
+                >
+                  Reset Progress
+                </button>
+              </div>
+              <textarea 
+                value={scriptsText}
+                onChange={(e) => setScriptsText(e.target.value)}
+                disabled={isAutoRunning}
+                className="w-full h-48 bg-slate-900/50 border border-slate-700 rounded-xl p-4 text-slate-200 focus:outline-none focus:border-brand-primary/50 resize-none font-medium leading-relaxed"
+                placeholder="Nhập nội dung comment vào đây..."
+              />
+            </div>
+
+            <div className="flex items-end gap-4 mb-6">
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">Delay (giây)</label>
+                <input 
+                  type="number" 
+                  value={intervalSeconds}
+                  onChange={(e) => setIntervalSeconds(Number(e.target.value))}
+                  disabled={isAutoRunning}
+                  className="w-24 bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-brand-primary/50 text-center font-bold text-lg"
+                  min={1}
+                />
+              </div>
+              <div className="flex-1">
+                {!isAutoRunning ? (
+                  <button 
+                    onClick={() => {
+                      if (adbDevices.length === 0) {
+                        alert("Vui lòng Quét USB trước khi chạy Auto!");
+                        return;
                       }
-                    } else {
-                      alert("Vui lòng Quét USB trước khi gửi!");
-                      return;
-                    }
-                    setShowReminder(false);
-                  }}
-                  className="bg-green-500 hover:bg-green-400 text-white font-semibold py-4 px-8 rounded-xl shadow-lg shadow-green-500/20 transition-all active:scale-95 text-lg flex-[2]"
-                >
-                  Auto Send (ADB)
-                </button>
-
-                <button className="bg-slate-700 hover:bg-slate-600 text-white font-medium py-4 px-6 rounded-xl transition-all active:scale-95 flex-1">
-                  Snooze 1 min
-                </button>
-                <button 
-                  onClick={() => setShowReminder(false)}
-                  className="bg-transparent border border-slate-600 hover:bg-slate-800 text-slate-300 font-medium py-4 px-6 rounded-xl transition-all active:scale-95 flex-1"
-                >
-                  Skip
-                </button>
+                      const lines = scriptsText.split('\n').filter(l => l.trim());
+                      if (lines.length === 0) {
+                        alert("Vui lòng nhập ít nhất 1 comment!");
+                        return;
+                      }
+                      if (currentLineIndex >= lines.length) {
+                        setCurrentLineIndex(0);
+                      }
+                      setCountdown(0); // Fire immediately on start
+                      setIsAutoRunning(true);
+                    }}
+                    className="w-full bg-green-500 hover:bg-green-400 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-green-500/20 transition-all active:scale-95 text-lg"
+                  >
+                    Start Auto Comment
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => setIsAutoRunning(false)}
+                    className="w-full bg-red-500 hover:bg-red-400 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-red-500/20 transition-all active:scale-95 text-lg flex items-center justify-center gap-2"
+                  >
+                    <StopCircle size={20} /> Stop Auto (Sending next in {countdown}s)
+                  </button>
+                )}
               </div>
             </div>
-          )}
-
-          {!showReminder && (
-             <div className="flex-1 border-2 border-dashed border-slate-700/50 rounded-2xl flex flex-col items-center justify-center text-slate-500">
-               <Clock size={48} className="mb-4 opacity-50" />
-               <p className="text-lg">Waiting for next scheduled script...</p>
-               <button 
-                 onClick={() => setShowReminder(true)}
-                 className="mt-4 text-sm text-brand-primary hover:underline"
-                >
-                 [Dev] Trigger Reminder
-               </button>
-             </div>
-          )}
-
+            
+            {/* Progress indicator */}
+            <div className="flex items-center justify-between text-sm text-slate-400">
+              <span>Tiến độ: {Math.min(currentLineIndex, scriptsText.split('\n').filter(l=>l.trim()).length)} / {scriptsText.split('\n').filter(l=>l.trim()).length} comments</span>
+              {isAutoRunning && <span className="text-brand-accent animate-pulse font-medium">Running...</span>}
+            </div>
+          </div>
         </div>
 
         {/* Right Column: Team & Stats */}
@@ -249,31 +279,24 @@ export function DashboardPage() {
               Upcoming Queue
             </h3>
             <div className="space-y-3 relative before:absolute before:inset-y-0 before:left-[11px] before:w-[2px] before:bg-slate-700/50">
-              
-              <div className="relative pl-8">
-                <div className="absolute left-0 top-1.5 w-6 h-6 rounded-full bg-slate-800 border-2 border-brand-accent flex items-center justify-center z-10">
-                  <div className="w-2 h-2 rounded-full bg-brand-accent"></div>
-                </div>
-                <p className="text-sm font-medium">In 2 mins</p>
-                <p className="text-xs text-slate-400 mt-1 truncate">"Hỏi size chiều cao cân nặng..."</p>
-              </div>
-
-              <div className="relative pl-8">
-                <div className="absolute left-0 top-1.5 w-6 h-6 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center z-10">
-                  <div className="w-2 h-2 rounded-full bg-slate-600"></div>
-                </div>
-                <p className="text-sm font-medium text-slate-300">In 5 mins</p>
-                <p className="text-xs text-slate-400 mt-1 truncate">"Chốt đơn gửi voucher..."</p>
-              </div>
-
-              <div className="relative pl-8">
-                <div className="absolute left-0 top-1.5 w-6 h-6 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center z-10">
-                  <div className="w-2 h-2 rounded-full bg-slate-600"></div>
-                </div>
-                <p className="text-sm font-medium text-slate-300">In 12 mins</p>
-                <p className="text-xs text-slate-400 mt-1 truncate">"Mini game tặng quà..."</p>
-              </div>
-
+              {(() => {
+                const lines = scriptsText.split('\n').map(l => l.trim()).filter(l => l);
+                const upcoming = lines.slice(currentLineIndex, currentLineIndex + 5);
+                if (upcoming.length === 0) {
+                  return <p className="text-sm text-slate-500 pl-8">Hết kịch bản.</p>;
+                }
+                return upcoming.map((line, idx) => (
+                  <div key={idx} className="relative pl-8">
+                    <div className={`absolute left-0 top-1.5 w-6 h-6 rounded-full bg-slate-800 border-2 ${idx === 0 && isAutoRunning ? 'border-brand-accent animate-pulse' : 'border-slate-600'} flex items-center justify-center z-10`}>
+                      <div className={`w-2 h-2 rounded-full ${idx === 0 && isAutoRunning ? 'bg-brand-accent' : 'bg-slate-600'}`}></div>
+                    </div>
+                    <p className={`text-sm font-medium ${idx === 0 && isAutoRunning ? 'text-white' : 'text-slate-400'}`}>
+                      {idx === 0 && isAutoRunning ? `Sending in ${countdown}s` : `Queue #${currentLineIndex + idx + 1}`}
+                    </p>
+                    <p className="text-sm text-slate-300 mt-1 truncate">"{line}"</p>
+                  </div>
+                ));
+              })()}
             </div>
           </div>
 
