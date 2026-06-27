@@ -1,13 +1,11 @@
 import subprocess
 import logging
-import os
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-ADB_PATH = os.getenv("ADB_PATH", "adb")
-
 def run_adb_command(args, device_id=None):
-    cmd = [ADB_PATH]
+    cmd = [settings.ADB_PATH]
     if device_id:
         cmd.extend(["-s", device_id])
     cmd.extend(args)
