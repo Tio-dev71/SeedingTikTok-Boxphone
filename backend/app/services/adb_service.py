@@ -43,14 +43,37 @@ def get_connected_devices():
 
 import base64
 import time
+import re
+
+def get_screen_size(device_id: str):
+    try:
+        output = run_adb_command(["shell", "wm", "size"], device_id)
+        if output:
+            match = re.search(r'(\d+)x(\d+)', output)
+            if match:
+                return int(match.group(1)), int(match.group(2))
+    except Exception as e:
+        logger.error(f"Could not get screen size for {device_id}: {e}")
+    return 1080, 1920 # Default fallback
 
 def send_comment_via_adb(device_id: str, text: str, tap_x: int = None, tap_y: int = None):
     logger.info(f"Sending comment to {device_id}: {text}")
     
-    # Optional: Tap the screen first to focus the text box
-    if tap_x is not None and tap_y is not None:
-        run_adb_command(["shell", "input", "tap", str(tap_x), str(tap_y)], device_id)
-        time.sleep(0.5) # Wait for keyboard/textbox to focus
+    # Auto-calculate coordinates if not provided properly (e.g. user leaves it 150/1800 but it's a long screen)
+    # Actually, let's always auto-calculate if tap_x is very small or we can just calculate a good default
+    width, height = get_screen_size(device_id)
+    
+    # If user provided default 150/1800, override it with smart calculation based on actual height
+    if tap_x == 150 and tap_y == 1800:
+        tap_x = int(width * 0.2)
+        tap_y = int(height * 0.92) # 92% down is usually safe for the chat box, avoiding the bottom nav bar
+    elif tap_x is None or tap_y is None:
+        tap_x = int(width * 0.2)
+        tap_y = int(height * 0.92)
+
+    logger.info(f"Tapping chat box at X:{tap_x} Y:{tap_y} for device {device_id} (Resolution: {width}x{height})")
+    run_adb_command(["shell", "input", "tap", str(tap_x), str(tap_y)], device_id)
+    time.sleep(0.5) # Wait for keyboard/textbox to focus
     
     # Use ADBKeyboard base64 broadcast to safely transmit Vietnamese characters
     # This bypasses all Windows/adb shell encoding issues
