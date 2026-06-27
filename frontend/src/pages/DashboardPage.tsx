@@ -123,15 +123,17 @@ export function DashboardPage() {
                 <button 
                   onClick={async () => {
                     if (adbDevices.length > 0) {
-                      // Send to first device for MVP demo
-                      try {
-                        await fetch("http://localhost:8000/api/adb/devices/send-comment", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ device_id: adbDevices[0], text: "Mọi người bấm thả tim góc phải màn hình ủng hộ shop nha ❤️" })
-                        });
-                      } catch (e) {
-                        console.error("Failed to send via ADB", e);
+                      // Send to ALL devices for testing
+                      for (const device of adbDevices) {
+                        try {
+                          await fetch("http://localhost:8000/api/adb/devices/send-comment", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ device_id: device, text: "Moi nguoi bam tha tim ung ho shop nha" })
+                          });
+                        } catch (e) {
+                          console.error("Failed to send via ADB", e);
+                        }
                       }
                     } else {
                       alert("Vui lòng Quét USB (Scan USB) ở cột bên phải trước khi gửi!");

@@ -42,12 +42,14 @@ def get_connected_devices():
     return devices
 
 def send_comment_via_adb(device_id: str, text: str):
-    # This uses ADBKeyboard broadcast to support Vietnamese characters
-    # If ADBKeyboard is not installed, this will fail silently on the device side
-    # A robust production version would check for the keyboard or fallback to base64 encoding tricks.
     logger.info(f"Sending comment to {device_id}: {text}")
     
-    # Using ADBKeyboard broadcast
+    # 1. Try using standard ADB input (this works on all phones without installing apps, but doesn't support Vietnamese)
+    # We strip accents temporarily for this test
+    clean_text = text.replace(" ", "%s") # adb requires spaces to be %s
+    run_adb_command(["shell", "input", "text", clean_text], device_id)
+
+    # 2. Try using ADBKeyboard broadcast (works for Vietnamese IF the ADBKeyboard app is installed)
     escaped_text = text.replace('"', '\\"').replace("'", "\\'")
     run_adb_command(["shell", "am", "broadcast", "-a", "ADB_INPUT_TEXT", "--es", "msg", f'"{escaped_text}"'], device_id)
     
