@@ -41,17 +41,15 @@ def get_connected_devices():
                 devices.append(parts[0])
     return devices
 
+import base64
+
 def send_comment_via_adb(device_id: str, text: str):
     logger.info(f"Sending comment to {device_id}: {text}")
     
-    # 1. Try using standard ADB input (this works on all phones without installing apps, but doesn't support Vietnamese)
-    # We strip accents temporarily for this test
-    clean_text = text.replace(" ", "%s") # adb requires spaces to be %s
-    run_adb_command(["shell", "input", "text", clean_text], device_id)
-
-    # 2. Try using ADBKeyboard broadcast (works for Vietnamese IF the ADBKeyboard app is installed)
-    escaped_text = text.replace('"', '\\"').replace("'", "\\'")
-    run_adb_command(["shell", "am", "broadcast", "-a", "ADB_INPUT_TEXT", "--es", "msg", f'"{escaped_text}"'], device_id)
+    # Use ADBKeyboard base64 broadcast to safely transmit Vietnamese characters
+    # This bypasses all Windows/adb shell encoding issues
+    encoded_text = base64.b64encode(text.encode('utf-8')).decode('utf-8')
+    run_adb_command(["shell", "am", "broadcast", "-a", "ADB_INPUT_B64", "--es", "msg", encoded_text], device_id)
     
     # Send ENTER keyevent (keycode 66) to submit the comment in TikTok
     run_adb_command(["shell", "input", "keyevent", "66"], device_id)
