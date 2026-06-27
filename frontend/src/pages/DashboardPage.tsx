@@ -11,6 +11,10 @@ export function DashboardPage() {
   const [isAutoRunning, setIsAutoRunning] = useState(false);
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
   const [countdown, setCountdown] = useState(0);
+  
+  // Coordinates for tapping the "Type..." chat box
+  const [tapX, setTapX] = useState(150);
+  const [tapY, setTapY] = useState(1800);
 
   // Auto Comment Loop Effect
   useEffect(() => {
@@ -40,7 +44,12 @@ export function DashboardPage() {
             fetch("http://localhost:8000/api/adb/devices/send-comment", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ device_id: device, text: textToSend })
+              body: JSON.stringify({ 
+                device_id: device, 
+                text: textToSend,
+                tap_x: tapX,
+                tap_y: tapY
+              })
             }).catch(e => console.error("ADB Error:", e));
           });
         }
@@ -52,7 +61,7 @@ export function DashboardPage() {
     }
     
     return () => clearTimeout(timer);
-  }, [isAutoRunning, countdown, currentLineIndex, intervalSeconds, scriptsText, adbDevices]);
+  }, [isAutoRunning, countdown, currentLineIndex, intervalSeconds, scriptsText, adbDevices, tapX, tapY]);
 
   return (
     <div className="h-full flex flex-col">
@@ -106,6 +115,26 @@ export function DashboardPage() {
             </div>
 
             <div className="flex items-end gap-4 mb-6">
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">Tọa độ X</label>
+                <input 
+                  type="number" 
+                  value={tapX}
+                  onChange={(e) => setTapX(Number(e.target.value))}
+                  disabled={isAutoRunning}
+                  className="w-20 bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-brand-primary/50 text-center font-bold text-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">Tọa độ Y</label>
+                <input 
+                  type="number" 
+                  value={tapY}
+                  onChange={(e) => setTapY(Number(e.target.value))}
+                  disabled={isAutoRunning}
+                  className="w-20 bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-brand-primary/50 text-center font-bold text-lg"
+                />
+              </div>
               <div>
                 <label className="block text-sm text-slate-400 mb-2">Delay (giây)</label>
                 <input 

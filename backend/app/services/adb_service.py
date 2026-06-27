@@ -42,9 +42,15 @@ def get_connected_devices():
     return devices
 
 import base64
+import time
 
-def send_comment_via_adb(device_id: str, text: str):
+def send_comment_via_adb(device_id: str, text: str, tap_x: int = None, tap_y: int = None):
     logger.info(f"Sending comment to {device_id}: {text}")
+    
+    # Optional: Tap the screen first to focus the text box
+    if tap_x is not None and tap_y is not None:
+        run_adb_command(["shell", "input", "tap", str(tap_x), str(tap_y)], device_id)
+        time.sleep(0.5) # Wait for keyboard/textbox to focus
     
     # Use ADBKeyboard base64 broadcast to safely transmit Vietnamese characters
     # This bypasses all Windows/adb shell encoding issues
