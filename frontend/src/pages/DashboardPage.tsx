@@ -5,6 +5,7 @@ export function DashboardPage() {
   const [sessionState, setSessionState] = useState("preparing");
   const [elapsedTime, setElapsedTime] = useState(0);
   const [showReminder, setShowReminder] = useState(true);
+  const [adbDevices, setAdbDevices] = useState<string[]>([]);
 
   useEffect(() => {
     let interval: number;
@@ -120,10 +121,27 @@ export function DashboardPage() {
 
               <div className="flex flex-wrap gap-4">
                 <button 
-                  onClick={() => setShowReminder(false)}
+                  onClick={async () => {
+                    if (adbDevices.length > 0) {
+                      // Send to first device for MVP demo
+                      try {
+                        await fetch("http://localhost:8000/api/adb/devices/send-comment", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ device_id: adbDevices[0], text: "Mọi người bấm thả tim góc phải màn hình ủng hộ shop nha ❤️" })
+                        });
+                      } catch (e) {
+                        console.error("Failed to send via ADB", e);
+                      }
+                    } else {
+                      alert("Vui lòng Quét USB (Scan USB) ở cột bên phải trước khi gửi!");
+                      return;
+                    }
+                    setShowReminder(false);
+                  }}
                   className="bg-green-500 hover:bg-green-400 text-white font-semibold py-4 px-8 rounded-xl shadow-lg shadow-green-500/20 transition-all active:scale-95 text-lg flex-1"
                 >
-                  Mark as Sent
+                  Mark as Sent (ADB)
                 </button>
                 <button className="bg-slate-700 hover:bg-slate-600 text-white font-medium py-4 px-6 rounded-xl transition-all active:scale-95 flex-1">
                   Snooze 1 min
@@ -157,44 +175,44 @@ export function DashboardPage() {
         <div className="col-span-4 flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar">
           
           <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-5">
-            <h3 className="font-semibold flex items-center gap-2 mb-4">
-              <Users size={18} className="text-brand-primary" /> 
-              Operations Team
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Users size={18} className="text-brand-primary" /> 
+                Boxphone Devices
+              </h3>
+              <button 
+                onClick={async () => {
+                  try {
+                    const res = await fetch("http://localhost:8000/api/adb/devices/scan");
+                    const data = await res.json();
+                    setAdbDevices(data);
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+                className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded"
+              >
+                Scan USB
+              </button>
+            </div>
             
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center font-bold">T</div>
-                  <div>
-                    <p className="font-medium text-sm">Tommy (Coordinator)</p>
-                    <p className="text-xs text-slate-400">Device: MacBook Pro</p>
+              {adbDevices.length === 0 ? (
+                <div className="text-sm text-slate-500 text-center py-4">No devices found. Click Scan USB.</div>
+              ) : (
+                adbDevices.map((dev: string, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-primary to-brand-accent flex items-center justify-center font-bold text-xs">{idx+1}</div>
+                      <div>
+                        <p className="font-medium text-sm">{dev}</p>
+                        <p className="text-xs text-slate-400">Status: Ready (ADB)</p>
+                      </div>
+                    </div>
+                    <div className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
                   </div>
-                </div>
-                <div className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center font-bold">A</div>
-                  <div>
-                    <p className="font-medium text-sm">Anna (Operator)</p>
-                    <p className="text-xs text-slate-400">Device: iPhone 13</p>
-                  </div>
-                </div>
-                <div className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 opacity-60">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-500 to-slate-700 flex items-center justify-center font-bold">B</div>
-                  <div>
-                    <p className="font-medium text-sm">Ben (Operator)</p>
-                    <p className="text-xs text-slate-400">Status: Break</p>
-                  </div>
-                </div>
-                <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-              </div>
+                ))
+              )}
             </div>
           </div>
 
