@@ -123,33 +123,14 @@ export function DashboardPage() {
               <div className="flex flex-wrap gap-4">
                 <button 
                   onClick={async () => {
-                    const textToCopy = "Mọi người bấm thả tim góc phải màn hình ủng hộ shop nha ❤️";
-                    try {
-                      await navigator.clipboard.writeText(textToCopy);
-                      setCopyStatus(true);
-                      setTimeout(() => {
-                        setCopyStatus(false);
-                        setShowReminder(false);
-                      }, 1000);
-                    } catch (err) {
-                      console.error("Failed to copy", err);
-                      setShowReminder(false);
-                    }
-                  }}
-                  className="bg-green-500 hover:bg-green-400 text-white font-semibold py-4 px-8 rounded-xl shadow-lg shadow-green-500/20 transition-all active:scale-95 text-lg flex-[2]"
-                >
-                  {copyStatus ? "Đã Copy! ✓" : "Copy & Mark as Sent"}
-                </button>
-                
-                <button 
-                  onClick={async () => {
                     if (adbDevices.length > 0) {
+                      const textToSend = "Mọi người bấm thả tim góc phải màn hình ủng hộ shop nha ❤️";
                       for (const device of adbDevices) {
                         try {
                           await fetch("http://localhost:8000/api/adb/devices/send-comment", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ device_id: device, text: "Moi nguoi bam tha tim ung ho shop nha" })
+                            body: JSON.stringify({ device_id: device, text: textToSend })
                           });
                         } catch (e) {
                           console.error("Failed to send via ADB", e);
@@ -161,9 +142,9 @@ export function DashboardPage() {
                     }
                     setShowReminder(false);
                   }}
-                  className="bg-blue-600 hover:bg-blue-500 text-white font-medium py-4 px-4 rounded-xl transition-all active:scale-95 flex-1 text-sm"
+                  className="bg-green-500 hover:bg-green-400 text-white font-semibold py-4 px-8 rounded-xl shadow-lg shadow-green-500/20 transition-all active:scale-95 text-lg flex-[2]"
                 >
-                  Auto ADB (Eng)
+                  Auto Send (ADB)
                 </button>
 
                 <button className="bg-slate-700 hover:bg-slate-600 text-white font-medium py-4 px-6 rounded-xl transition-all active:scale-95 flex-1">
