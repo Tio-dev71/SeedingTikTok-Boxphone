@@ -73,9 +73,6 @@ export function DashboardPage() {
             Trạng thái: {adbDevices.length > 0 ? <span className="text-green-400 font-medium">{adbDevices.length} máy sẵn sàng</span> : <span className="text-slate-500">Chưa quét thiết bị</span>}
           </div>
         </div>
-      </div>>
-          </div>
-        </div>
       </div>
 
       {/* Main Grid */}
