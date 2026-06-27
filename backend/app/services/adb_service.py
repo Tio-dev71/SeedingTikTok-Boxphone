@@ -5,11 +5,19 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+# Fix python-dotenv escaping Windows paths (e.g. \a becomes \x07)
+CLEAN_ADB_PATH = settings.ADB_PATH.replace("\x07", "a").replace("\u0007", "a").replace("\t", "t").replace("\n", "n").replace("\r", "r")
+
 def run_adb_command(args, device_id=None):
-    if not os.path.exists(settings.ADB_PATH):
-        raise Exception(f"ADB file not found at: '{settings.ADB_PATH}'. Please check your .env file.")
+    if not os.path.exists(CLEAN_ADB_PATH):
+        # Fallback to literal if the user's path is extremely specific
+        if os.path.exists(r"C:\Program Files (x86)\xiaowei\tools\adb.exe"):
+            global CLEAN_ADB_PATH
+            CLEAN_ADB_PATH = r"C:\Program Files (x86)\xiaowei\tools\adb.exe"
+        else:
+            raise Exception(f"ADB file not found at: '{CLEAN_ADB_PATH}'. Please check your .env file.")
     
-    cmd = [settings.ADB_PATH]
+    cmd = [CLEAN_ADB_PATH]
     if device_id:
         cmd.extend(["-s", device_id])
     cmd.extend(args)
