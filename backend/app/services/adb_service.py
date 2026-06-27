@@ -36,8 +36,8 @@ def send_comment_via_adb(device_id: str, text: str):
     logger.info(f"Sending comment to {device_id}: {text}")
     
     # Using ADBKeyboard broadcast
-    escaped_text = text.replace(""", "\"").replace(", ")
-    run_adb_command(["shell", "am", "broadcast", "-a", "ADB_INPUT_TEXT", "--es", "msg", f""{escaped_text}""], device_id)
+    escaped_text = text.replace('"', '\\"').replace("'", "\\'")
+    run_adb_command(["shell", "am", "broadcast", "-a", "ADB_INPUT_TEXT", "--es", "msg", f'"{escaped_text}"'], device_id)
     
     # Send ENTER keyevent (keycode 66) to submit the comment in TikTok
     run_adb_command(["shell", "input", "keyevent", "66"], device_id)
