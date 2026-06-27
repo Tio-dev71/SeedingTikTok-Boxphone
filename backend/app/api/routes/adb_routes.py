@@ -1,7 +1,7 @@
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from typing import List
 from pydantic import BaseModel
-from app.services.adb_service import get_connected_devices, send_comment_via_adb
+from app.services.adb_service import get_connected_devices, send_comment_via_adb, run_adb_command
 
 router = APIRouter()
 
@@ -25,3 +25,11 @@ def send_comment(payload: CommentPayload, background_tasks: BackgroundTasks):
     
     background_tasks.add_task(send_comment_via_adb, payload.device_id, payload.text)
     return {"status": "sending in background", "device_id": payload.device_id}
+
+@router.post("/devices/setup-keyboard")
+def setup_keyboard():
+    devices = get_connected_devices()
+    for device in devices:
+        run_adb_command(["shell", "ime", "enable", "com.android.adbkeyboard/.AdbIME"], device)
+        run_adb_command(["shell", "ime", "set", "com.android.adbkeyboard/.AdbIME"], device)
+    return {"status": "success", "devices_configured": len(devices)}

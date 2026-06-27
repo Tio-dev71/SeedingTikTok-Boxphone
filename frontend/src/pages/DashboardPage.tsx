@@ -179,32 +179,49 @@ export function DashboardPage() {
         <div className="col-span-4 flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar">
           
           <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold flex items-center gap-2">
-                <Users size={18} className="text-brand-primary" /> 
-                Boxphone Devices
-              </h3>
-              <button 
-                onClick={async () => {
-                  try {
-                    const res = await fetch("http://localhost:8000/api/adb/devices/scan");
-                    const data = await res.json();
-                    if (Array.isArray(data)) {
-                      setAdbDevices(data);
-                    } else {
-                      alert("Lỗi quét thiết bị: " + JSON.stringify(data));
-                      setAdbDevices([]);
-                    }
-                  } catch (e) {
-                    console.error(e);
-                    alert("Không thể kết nối đến Backend!");
-                  }
-                }}
-                className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded"
-              >
-                Scan USB
-              </button>
-            </div>
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-3 text-slate-300">
+                  <Users size={20} className="text-blue-400" />
+                  <h2 className="text-lg font-medium">Boxphone Devices</h2>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={async () => {
+                      if (adbDevices.length > 0) {
+                        try {
+                          await fetch("http://localhost:8000/api/adb/devices/setup-keyboard", { method: "POST" });
+                          alert("Đã ép bật ADB Keyboard thành công cho " + adbDevices.length + " máy!");
+                        } catch(e) {
+                          alert("Lỗi khi bật keyboard!");
+                        }
+                      }
+                    }}
+                    className="text-xs bg-purple-500/20 hover:bg-purple-500/40 text-purple-300 border border-purple-500/50 px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    Fix Keyboard
+                  </button>
+                  <button 
+                    onClick={async () => {
+                      try {
+                        const res = await fetch("http://localhost:8000/api/adb/devices/scan");
+                        const data = await res.json();
+                        if (Array.isArray(data.devices)) {
+                          setAdbDevices(data.devices);
+                        } else {
+                          alert("Lỗi quét thiết bị: " + JSON.stringify(data));
+                          setAdbDevices([]);
+                        }
+                      } catch (e) {
+                        console.error(e);
+                        alert("Không thể kết nối Backend");
+                      }
+                    }}
+                    className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    Scan USB
+                  </button>
+                </div>
+              </div>
             
             <div className="space-y-4">
               {adbDevices.length === 0 ? (
