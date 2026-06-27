@@ -1,10 +1,14 @@
 import subprocess
 import logging
+import os
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 def run_adb_command(args, device_id=None):
+    if not os.path.exists(settings.ADB_PATH):
+        raise Exception(f"ADB file not found at: '{settings.ADB_PATH}'. Please check your .env file.")
+    
     cmd = [settings.ADB_PATH]
     if device_id:
         cmd.extend(["-s", device_id])
