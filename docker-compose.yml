@@ -1,0 +1,44 @@
+version: "3.8"
+services:
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=livestream
+      - POSTGRES_PASSWORD=livestream
+      - POSTGRES_DB=live_control
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://livestream:livestream@db:5432/live_control
+      - SECRET_KEY=supersecretkey123
+      - CORS_ORIGINS=http://localhost:5173
+    depends_on:
+      - db
+    command: >
+      bash -c "alembic upgrade head && python app/seed.py && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  pgdata:
